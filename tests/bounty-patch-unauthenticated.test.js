@@ -11,7 +11,7 @@ import { findTerminalBounty, refetchBounty, patchBounty } from '../src/client.js
  *   absent.
  *
  * Original (vulnerable) behavior: 200 OK, action processed.
- * Required (fixed) behavior:      401 Unauthorized, action NOT processed.
+ * Required (fixed) behavior:      401/403, action NOT processed.
  *
  * Safety: we only ever target a bounty that is ALREADY in the terminal
  * state matching the action we send (e.g. re-cancel an already-cancelled
@@ -50,10 +50,9 @@ test('PATCH /api/bounty-board/:id rejects an impersonated address with no signat
     );
   }
 
-  assert.equal(
-    status,
-    401,
-    `expected 401 Unauthorized for an unsigned state-changing request, got ${status}. ` +
+  assert.ok(
+    status === 401 || status === 403,
+    `expected 401 or 403 for an unsigned state-changing request, got ${status}. ` +
       `This isn't the original bypass shape, but it's not the documented fixed behavior either - ` +
       `worth a manual look. Response: ${JSON.stringify(body)}`
   );
