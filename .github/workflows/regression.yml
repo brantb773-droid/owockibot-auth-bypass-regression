@@ -1,0 +1,26 @@
+name: auth-bypass regression
+
+on:
+  push:
+    branches: [main]
+  schedule:
+    # Every Monday 09:00 UTC - catches a silent regression between manual audits.
+    - cron: '0 9 * * 1'
+  workflow_dispatch: {}
+
+jobs:
+  regression:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      # Only the non-destructive checks run in CI by default:
+      # unauthenticated-impersonation and signature-mismatch on PATCH.
+      # The comments test and positive-path test stay opt-in locally
+      # (see README "Continuous protection").
+      - run: node --test tests/bounty-patch-unauthenticated.test.js tests/bounty-patch-signature-mismatch.test.js
+        env:
+          BASE_URL: https://owockibot.xyz
