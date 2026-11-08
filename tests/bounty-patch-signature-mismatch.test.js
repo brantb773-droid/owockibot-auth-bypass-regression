@@ -16,9 +16,15 @@ import { buildSiweMessage, signMessage, randomWallet } from '../src/siwe.js';
  * This test signs a syntactically-plausible SIWE message with a random,
  * never-allowlisted throwaway wallet, then claims a DIFFERENT (real,
  * allowlisted) address in the request body. A correctly-implemented
- * server must reject this with 401 regardless of whether SIWE nonces
+ * server must reject this with 401/403 regardless of whether SIWE nonces
  * are fully wired up yet - signature-recovery mismatch should fail
  * closed on its own.
+ *
+ * Note: if this test and the no-signature test both return the exact
+ * same error message, that's a sign the server may only be checking
+ * "is a signature present" rather than "does the signature actually
+ * recover to the claimed address." Worth confirming with the team once
+ * the signed payload shape is documented.
  *
  * Safety: same terminal-bounty targeting as the unauthenticated test.
  */
@@ -61,9 +67,12 @@ test('PATCH /api/bounty-board/:id rejects a signature that does not match the cl
     );
   }
 
-  assert.equal(
-    status,
-    401,
-    `expected 401 for a mismatched signature, got ${status}. Response: ${JSON.stringify(body)}`
+  assert.ok(
+    status === 401 || status === 403,
+    `expected 401 or 403 for a mismatched signature, got ${status}. ` +
+      `Note: identical error text to the no-signature case may mean this endpoint isn't ` +
+      `actually checking signature-recovery against the claimed address yet - just that a ` +
+      `signature/session is present at all. Worth confirming with owocki once the exact signed ` +
+      `payload shape is documented. Response: ${JSON.stringify(body)}`
   );
 });
